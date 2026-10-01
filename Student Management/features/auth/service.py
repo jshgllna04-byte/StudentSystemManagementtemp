@@ -2,8 +2,8 @@ from features.auth.model import MIN_PASSWORD_LENGTH
 from features.auth.repository import insert_user, select_user
 
 
-def register(username, password, confirm_password):
-    if not username or not password or not confirm_password:
+def register(user_name, password, confirm_password):
+    if not user_name or not password or not confirm_password:
         return False, "Missing Information", "Please fill in all fields."
 
     if password != confirm_password:
@@ -16,7 +16,7 @@ def register(username, password, confirm_password):
             "Password must contain at least 4 characters.",
         )
 
-    if not insert_user(username, password):
+    if not insert_user(user_name, password):
         return (
             False,
             "Username Exists",
@@ -26,15 +26,15 @@ def register(username, password, confirm_password):
     return True, "Success", "Account created successfully."
 
 
-def login(username, password):
-    if not username or not password:
+def login(user_name, password):
+    if not user_name or not password:
         return (
             None,
             "Invalid information",
             "please enter username and password",
         )
 
-    user = select_user(username, password)
+    user = select_user(user_name, password)
 
     if not user:
         return None, "Login Failed", "Invalid Username or Password"

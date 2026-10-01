@@ -1,9 +1,3 @@
-COURSES = [
-    "BSCS",
-    "BSIT",
-    "BSCpE"
-]
-
 YEAR_LEVELS = [
     "1st",
     "2nd",
@@ -12,16 +6,28 @@ YEAR_LEVELS = [
     "5th"
 ]
 
-# Database column order used by every students query.
+# Column order returned by the STUDENT_INFO queries in repository.py.
 STUDENT_COLUMNS = [
-    "id",
-    "fullname",
-    "age",
+    "student_id",
+    "user_id",
+    "student_number",
+    "full_name",
+    "course_code",
+    "year_level",
     "address",
-    "contact",
+    "contact_number",
     "email",
-    "course",
-    "year_level"
+    "age",
+]
+
+# Column order returned by the ENROLLMENT queries in repository.py.
+ENROLLMENT_COLUMNS = [
+    "enrollment_id",
+    "student_id",
+    "course_code",
+    "code",
+    "time",
+    "room",
 ]
 
 SUBJECTS = {

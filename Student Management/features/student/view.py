@@ -17,10 +17,62 @@ from PyQt6.QtWidgets import (
 )
 
 from features.student import service
-from features.student.model import COURSES, YEAR_LEVELS, get_subjects
+from features.student.model import YEAR_LEVELS, get_subjects
 
 
-class AddStudentPage(QWidget):
+class StudentFormMixin:
+
+    def load_course_choices(self):
+        course_codes = service.get_course_codes()
+
+        self.course.clear()
+        self.course.addItems(course_codes)
+
+        if hasattr(self, "enroll_course"):
+            self.enroll_course.clear()
+            self.enroll_course.addItems(course_codes)
+
+    def update_subjects(self):
+        self.subjects.clear()
+
+        for subject in get_subjects(
+            self.course.currentText(),
+            self.year_level.currentText()
+        ):
+            self.subjects.addItem("• " + subject)
+
+    def read_form(self):
+        return {
+            "student_number": self.student_number.text().strip(),
+            "full_name": self.full_name.text().strip(),
+            "age": self.age.text().strip(),
+            "address": self.address.text().strip(),
+            "contact_number": self.contact.text().strip(),
+            "email": self.email.text().strip(),
+            "course_code": self.course.currentText(),
+            "year_level": self.year_level.currentText()
+        }
+
+    def fill_form(self, student):
+        # STUDENT_COLUMNS order
+        self.student_number.setText(student[2])
+        self.full_name.setText(student[3])
+
+        course_index = self.course.findText(student[4])
+        if course_index >= 0:
+            self.course.setCurrentIndex(course_index)
+
+        year_index = self.year_level.findText(student[5])
+        if year_index >= 0:
+            self.year_level.setCurrentIndex(year_index)
+
+        self.address.setText(student[6])
+        self.contact.setText(student[7])
+        self.email.setText(student[8])
+        self.age.setText(str(student[9]))
+
+
+class AddStudentPage(StudentFormMixin, QWidget):
 
     def __init__(self, main_window):
         super().__init__()
@@ -45,52 +97,56 @@ class AddStudentPage(QWidget):
 
         form = QGridLayout()
 
-        self.fullname = QLineEdit()
-        self.fullname.setPlaceholderText("Enter Fullname")
+        self.student_number = QLineEdit()
+        self.student_number.setPlaceholderText("Enter Student Number")
 
-        self.address = QLineEdit()
-        self.address.setPlaceholderText("Enter Address")
+        self.full_name = QLineEdit()
+        self.full_name.setPlaceholderText("Enter Full Name")
 
         self.age = QLineEdit()
         self.age.setPlaceholderText("Enter age")
 
-        self.contact = QLineEdit()
-        self.contact.setPlaceholderText("Enter Contact")
+        self.address = QLineEdit()
+        self.address.setPlaceholderText("Enter Address")
 
-        self.course = QComboBox()
-        self.course.addItems(COURSES)
+        self.contact = QLineEdit()
+        self.contact.setPlaceholderText("Enter Contact Number")
 
         self.email = QLineEdit()
         self.email.setPlaceholderText("Enter email")
 
-        self.yearlvl = QComboBox()
-        self.yearlvl.addItems(YEAR_LEVELS)
+        self.course = QComboBox()
+
+        self.year_level = QComboBox()
+        self.year_level.addItems(YEAR_LEVELS)
 
         self.subjects = QListWidget()
 
-        form.addWidget(QLabel("Fullname"), 0, 0)
-        form.addWidget(self.fullname, 1, 0)
+        form.addWidget(QLabel("Student Number"), 0, 0)
+        form.addWidget(self.student_number, 1, 0)
 
-        form.addWidget(QLabel("Address"), 0, 1)
-        form.addWidget(self.address, 1, 1)
+        form.addWidget(QLabel("Full Name"), 0, 1)
+        form.addWidget(self.full_name, 1, 1)
 
-        form.addWidget(QLabel("age"), 2, 0)
+        form.addWidget(QLabel("Age"), 2, 0)
         form.addWidget(self.age, 3, 0)
 
-        form.addWidget(QLabel("Contact"), 2, 1)
-        form.addWidget(self.contact, 3, 1)
+        form.addWidget(QLabel("Address"), 2, 1)
+        form.addWidget(self.address, 3, 1)
 
-        form.addWidget(QLabel("Course"), 4, 0)
-        form.addWidget(self.course, 5, 0)
+        form.addWidget(QLabel("Contact Number"), 4, 0)
+        form.addWidget(self.contact, 5, 0)
 
         form.addWidget(QLabel("Email"), 4, 1)
         form.addWidget(self.email, 5, 1)
 
-        form.addWidget(QLabel("Year Level"), 6, 0)
-        form.addWidget(self.yearlvl, 7, 0)
+        form.addWidget(QLabel("Course"), 6, 0)
+        form.addWidget(self.course, 7, 0)
 
-        form.addWidget(QLabel("Subjects"), 6, 1)
-        form.addWidget(self.subjects, 7, 1)
+        form.addWidget(QLabel("Year Level"), 6, 1)
+        form.addWidget(self.year_level, 7, 1)
+
+        form.addWidget(QLabel("Subjects"), 8, 0, 1, 2)
 
         main_layout.addLayout(form)
 
@@ -109,39 +165,25 @@ class AddStudentPage(QWidget):
         self.setLayout(main_layout)
 
         self.course.currentIndexChanged.connect(self.update_subjects)
-        self.yearlvl.currentIndexChanged.connect(self.update_subjects)
+        self.year_level.currentIndexChanged.connect(self.update_subjects)
 
+        self.load_course_choices()
         self.update_subjects()
 
     def clear_form(self):
-        self.fullname.clear()
+        self.student_number.clear()
+        self.full_name.clear()
         self.age.clear()
         self.address.clear()
         self.contact.clear()
         self.email.clear()
 
-        self.course.setCurrentIndex(0)
-        self.yearlvl.setCurrentIndex(0)
-
-    def update_subjects(self):
-        self.subjects.clear()
-
-        for subject in get_subjects(
-            self.course.currentText(),
-            self.yearlvl.currentText()
-        ):
-            self.subjects.addItem("." + subject)
+        self.load_course_choices()
+        self.year_level.setCurrentIndex(0)
+        self.update_subjects()
 
     def next_page(self):
-        data = {
-            "fullname": self.fullname.text().strip(),
-            "age": self.age.text().strip(),
-            "address": self.address.text().strip(),
-            "contact": self.contact.text().strip(),
-            "email": self.email.text().strip(),
-            "course": self.course.currentText(),
-            "year_level": self.yearlvl.currentText()
-        }
+        data = self.read_form()
 
         title, message = service.validate(data)
 
@@ -172,7 +214,8 @@ class VerifyStudentPage(QWidget):
 
         form = QGridLayout()
 
-        self.fullname = QLabel()
+        self.student_number = QLabel()
+        self.full_name = QLabel()
         self.age = QLabel()
         self.address = QLabel()
         self.contact = QLabel()
@@ -184,20 +227,23 @@ class VerifyStudentPage(QWidget):
         self.subjects = QListWidget()
 
         # Left side
-        form.addWidget(QLabel("Full name:"), 0, 0)
-        form.addWidget(self.fullname, 0, 1)
+        form.addWidget(QLabel("Student Number:"), 0, 0)
+        form.addWidget(self.student_number, 0, 1)
 
-        form.addWidget(QLabel("Age:"), 1, 0)
-        form.addWidget(self.age, 1, 1)
+        form.addWidget(QLabel("Full Name:"), 1, 0)
+        form.addWidget(self.full_name, 1, 1)
 
-        form.addWidget(QLabel("Address:"), 2, 0)
-        form.addWidget(self.address, 2, 1)
+        form.addWidget(QLabel("Age:"), 2, 0)
+        form.addWidget(self.age, 2, 1)
 
-        form.addWidget(QLabel("Contact:"), 3, 0)
-        form.addWidget(self.contact, 3, 1)
+        form.addWidget(QLabel("Address:"), 3, 0)
+        form.addWidget(self.address, 3, 1)
 
-        form.addWidget(QLabel("Email:"), 4, 0)
-        form.addWidget(self.email, 4, 1)
+        form.addWidget(QLabel("Contact Number:"), 4, 0)
+        form.addWidget(self.contact, 4, 1)
+
+        form.addWidget(QLabel("Email:"), 5, 0)
+        form.addWidget(self.email, 5, 1)
 
         # Right side
         form.addWidget(QLabel("Course:"), 0, 2)
@@ -207,11 +253,10 @@ class VerifyStudentPage(QWidget):
         form.addWidget(self.year_level, 0, 5)
 
         form.addWidget(QLabel("Subjects:"), 1, 2)
-        form.addWidget(self.subjects, 1, 3, 4, 3)
+        form.addWidget(self.subjects, 1, 3, 5, 3)
 
         layout.addLayout(form)
 
-        # Buttons
         buttons = QHBoxLayout()
 
         back_button = QPushButton("Back")
@@ -230,17 +275,18 @@ class VerifyStudentPage(QWidget):
         self.setLayout(layout)
 
     def load_data(self, data):
-        self.fullname.setText(data["fullname"])
+        self.student_number.setText(data["student_number"])
+        self.full_name.setText(data["full_name"])
         self.age.setText(str(data["age"]))
         self.address.setText(data["address"])
-        self.contact.setText(data["contact"])
+        self.contact.setText(data["contact_number"])
         self.email.setText(data["email"])
-        self.course.setText(data["course"])
+        self.course.setText(data["course_code"])
         self.year_level.setText(data["year_level"])
 
         self.subjects.clear()
 
-        for subject in get_subjects(data["course"], data["year_level"]):
+        for subject in get_subjects(data["course_code"], data["year_level"]):
             self.subjects.addItem("• " + subject)
 
     def submit(self):
@@ -249,7 +295,9 @@ class VerifyStudentPage(QWidget):
         if not data:
             return
 
-        student_id, title, message = service.create(data)
+        user_id = self.main_window.current_user[0]
+
+        student_id, title, message = service.create(user_id, data)
 
         if title:
             QMessageBox.warning(self, title, message)
@@ -312,17 +360,18 @@ class ViewStudentPage(QWidget):
         # ----------------------------------------------------
 
         self.table = QTableWidget()
-        self.table.setColumnCount(9)
+        self.table.setColumnCount(10)
 
         self.table.setHorizontalHeaderLabels([
             "ID",
+            "Student Number",
             "Name",
-            "Age",
             "Course",
             "Year Level",
             "Address",
             "Contact",
             "Email",
+            "Age",
             "View"
         ])
 
@@ -344,14 +393,17 @@ class ViewStudentPage(QWidget):
     def display_students(self, students):
         self.table.setRowCount(0)
 
+        # STUDENT_COLUMNS -> table column order
+        indexes = [0, 2, 3, 4, 5, 6, 7, 8, 9]
+
         for row, student in enumerate(students):
             self.table.insertRow(row)
 
-            for column in range(8):
+            for column, index in enumerate(indexes):
                 self.table.setItem(
                     row,
                     column,
-                    QTableWidgetItem(str(student[column]))
+                    QTableWidgetItem(str(student[index]))
                 )
 
             view_button = QPushButton("View")
@@ -362,7 +414,7 @@ class ViewStudentPage(QWidget):
                 self.open_student(student_id)
             )
 
-            self.table.setCellWidget(row, 8, view_button)
+            self.table.setCellWidget(row, 9, view_button)
 
     def search_students(self, text):
         text = text.lower().strip()
@@ -374,10 +426,11 @@ class ViewStudentPage(QWidget):
         filtered = []
 
         for student in self.students:
-            name = str(student[1]).lower()
-            email = str(student[7]).lower()
+            student_number = str(student[2]).lower()
+            name = str(student[3]).lower()
+            email = str(student[8]).lower()
 
-            if text in name or text in email:
+            if text in student_number or text in name or text in email:
                 filtered.append(student)
 
         self.display_students(filtered)
@@ -386,7 +439,7 @@ class ViewStudentPage(QWidget):
         self.main_window.show_student_details(student_id)
 
 
-class StudentDetailsPage(QWidget):
+class StudentDetailsPage(StudentFormMixin, QWidget):
 
     def __init__(self, main_window):
         super().__init__()
@@ -423,45 +476,104 @@ class StudentDetailsPage(QWidget):
 
         form = QGridLayout()
 
-        self.fullname = QLineEdit()
+        self.student_number = QLineEdit()
+        self.full_name = QLineEdit()
         self.age = QLineEdit()
         self.address = QLineEdit()
         self.contact = QLineEdit()
         self.email = QLineEdit()
 
         self.course = QComboBox()
-        self.course.addItems(COURSES)
-
         self.year_level = QComboBox()
         self.year_level.addItems(YEAR_LEVELS)
 
         self.subjects = QListWidget()
 
-        form.addWidget(QLabel("Fullname"), 0, 0)
-        form.addWidget(self.fullname, 1, 0)
+        form.addWidget(QLabel("Student Number"), 0, 0)
+        form.addWidget(self.student_number, 1, 0)
 
-        form.addWidget(QLabel("Address"), 0, 1)
-        form.addWidget(self.address, 1, 1)
+        form.addWidget(QLabel("Full Name"), 0, 1)
+        form.addWidget(self.full_name, 1, 1)
 
         form.addWidget(QLabel("Age"), 2, 0)
         form.addWidget(self.age, 3, 0)
 
-        form.addWidget(QLabel("Contact"), 2, 1)
-        form.addWidget(self.contact, 3, 1)
+        form.addWidget(QLabel("Address"), 2, 1)
+        form.addWidget(self.address, 3, 1)
 
-        form.addWidget(QLabel("Course"), 4, 0)
-        form.addWidget(self.course, 5, 0)
+        form.addWidget(QLabel("Contact Number"), 4, 0)
+        form.addWidget(self.contact, 5, 0)
 
         form.addWidget(QLabel("Email"), 4, 1)
         form.addWidget(self.email, 5, 1)
 
-        form.addWidget(QLabel("Year Level"), 6, 0)
-        form.addWidget(self.year_level, 7, 0)
+        form.addWidget(QLabel("Course"), 6, 0)
+        form.addWidget(self.course, 7, 0)
 
-        form.addWidget(QLabel("Subjects"), 6, 1)
-        form.addWidget(self.subjects, 7, 1)
+        form.addWidget(QLabel("Year Level"), 6, 1)
+        form.addWidget(self.year_level, 7, 1)
+
+        form.addWidget(QLabel("Subjects"), 8, 0, 1, 2)
 
         layout.addLayout(form)
+
+        # ----------------------------------------------------
+        # ENROLLMENT
+        # ----------------------------------------------------
+
+        enrollment_title = QLabel("Enrollments")
+        enrollment_title.setObjectName("sectionTitle")
+
+        layout.addWidget(enrollment_title)
+
+        self.enrollment_table = QTableWidget()
+        self.enrollment_table.setColumnCount(5)
+
+        self.enrollment_table.setHorizontalHeaderLabels([
+            "Course",
+            "Code",
+            "Time",
+            "Room",
+            "Action"
+        ])
+
+        self.enrollment_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.enrollment_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.enrollment_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        layout.addWidget(self.enrollment_table)
+
+        enrollment_form = QGridLayout()
+
+        self.enroll_course = QComboBox()
+
+        self.enroll_code = QLineEdit()
+        self.enroll_code.setPlaceholderText("Code")
+
+        self.enroll_time = QLineEdit()
+        self.enroll_time.setPlaceholderText("Time")
+
+        self.enroll_room = QLineEdit()
+        self.enroll_room.setPlaceholderText("Room")
+
+        enroll_button = QPushButton("Enroll")
+        enroll_button.clicked.connect(self.enroll)
+
+        enrollment_form.addWidget(QLabel("Course"), 0, 0)
+        enrollment_form.addWidget(self.enroll_course, 1, 0)
+
+        enrollment_form.addWidget(QLabel("Code"), 0, 1)
+        enrollment_form.addWidget(self.enroll_code, 1, 1)
+
+        enrollment_form.addWidget(QLabel("Time"), 0, 2)
+        enrollment_form.addWidget(self.enroll_time, 1, 2)
+
+        enrollment_form.addWidget(QLabel("Room"), 0, 3)
+        enrollment_form.addWidget(self.enroll_room, 1, 3)
+
+        enrollment_form.addWidget(enroll_button, 1, 4)
+
+        layout.addLayout(enrollment_form)
 
         # ----------------------------------------------------
         # BUTTONS
@@ -474,6 +586,7 @@ class StudentDetailsPage(QWidget):
         update_button.clicked.connect(self.update)
 
         delete_button = QPushButton("Delete")
+        delete_button.setObjectName("danger")
         delete_button.clicked.connect(self.delete)
 
         buttons.addWidget(update_button)
@@ -487,6 +600,8 @@ class StudentDetailsPage(QWidget):
         self.course.currentIndexChanged.connect(self.update_subjects)
         self.year_level.currentIndexChanged.connect(self.update_subjects)
 
+        self.load_course_choices()
+
     def load_student(self, student_id):
         self.student_id = student_id
 
@@ -497,59 +612,65 @@ class StudentDetailsPage(QWidget):
             self.main_window.show_students()
             return
 
-        # Database order:
-        #
-        # id
-        # fullname
-        # age
-        # address
-        # contact
-        # email
-        # course
-        # year_level
-
-        self.fullname.setText(student[1])
-        self.age.setText(str(student[2]))
-        self.address.setText(student[3])
-        self.contact.setText(student[4])
-        self.email.setText(student[5])
-
-        course_index = self.course.findText(student[6])
-
-        if course_index >= 0:
-            self.course.setCurrentIndex(course_index)
-
-        year_index = self.year_level.findText(student[7])
-
-        if year_index >= 0:
-            self.year_level.setCurrentIndex(year_index)
+        self.fill_form(student)
 
         self.update_subjects()
+        self.load_enrollments()
 
-    def update_subjects(self):
-        self.subjects.clear()
+    def load_enrollments(self):
+        self.enrollment_table.setRowCount(0)
 
-        for subject in get_subjects(
-            self.course.currentText(),
-            self.year_level.currentText()
-        ):
-            self.subjects.addItem("• " + subject)
+        enrollments = service.get_enrollments(self.student_id)
 
-    def collect_data(self):
-        return {
-            "fullname": self.fullname.text().strip(),
-            "age": self.age.text().strip(),
-            "address": self.address.text().strip(),
-            "contact": self.contact.text().strip(),
-            "email": self.email.text().strip(),
-            "course": self.course.currentText(),
-            "year_level": self.year_level.currentText()
-        }
+        for row, enrollment in enumerate(enrollments):
+            # ENROLLMENT_COLUMNS: id, student_id, course_code, code, time, room
+            self.enrollment_table.insertRow(row)
+
+            for column, index in enumerate([2, 3, 4, 5]):
+                self.enrollment_table.setItem(
+                    row,
+                    column,
+                    QTableWidgetItem(str(enrollment[index]))
+                )
+
+            remove_button = QPushButton("Remove")
+            remove_button.setObjectName("view")
+
+            remove_button.clicked.connect(
+                lambda checked=False, enrollment_id=enrollment[0]:
+                self.remove_enrollment(enrollment_id)
+            )
+
+            self.enrollment_table.setCellWidget(row, 4, remove_button)
+
+    def enroll(self):
+        enrollment_id, title, message = service.enroll(
+            self.student_id,
+            self.enroll_course.currentText(),
+            self.enroll_code.text().strip(),
+            self.enroll_time.text().strip(),
+            self.enroll_room.text().strip()
+        )
+
+        if title:
+            QMessageBox.warning(self, title, message)
+            return
+
+        self.enroll_code.clear()
+        self.enroll_time.clear()
+        self.enroll_room.clear()
+
+        self.load_enrollments()
+
+    def remove_enrollment(self, enrollment_id):
+        service.unenroll(enrollment_id)
+
+        self.load_enrollments()
 
     def update(self):
         success, title, message = service.update(
             self.student_id,
-            self.collect_data()
+            self.read_form()
         )
 
         if not success:

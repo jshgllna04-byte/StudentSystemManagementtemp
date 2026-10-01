@@ -1,39 +1,29 @@
 import sqlite3
 
-from data.data import get_connection
+from data.data import connection_scope
 
 INSERT_USER = """
-    INSERT INTO users (username, password) VALUES (?,?)
+    INSERT INTO USER (user_name, password) VALUES (?,?)
 """
 
 SELECT_USER = """
-    SELECT id, username FROM users WHERE username = ? AND password = ?
+    SELECT user_id, user_name FROM USER WHERE user_name = ? AND password = ?
 """
 
 
-def insert_user(username, password):
-    connection = get_connection()
-    cursor = connection.cursor()
+def insert_user(user_name, password):
+    with connection_scope() as connection:
+        try:
+            connection.execute(INSERT_USER, (user_name, password))
+        except sqlite3.IntegrityError:
+            return False
 
-    try:
-        cursor.execute(INSERT_USER, (username, password))
-        connection.commit()
-
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        connection.close()
+    return True
 
 
-def select_user(username, password):
-    connection = get_connection()
-    cursor = connection.cursor()
-
-    cursor.execute(SELECT_USER, (username, password))
-
-    user = cursor.fetchone()
-
-    connection.close()
-
-    return user
+def select_user(user_name, password):
+    with connection_scope() as connection:
+        return connection.execute(
+            SELECT_USER,
+            (user_name, password),
+        ).fetchone()
