@@ -6,15 +6,18 @@ from PyQt6.QtWidgets import (
     QStackedWidget
 )
 
-from database import create_database
-from style import STYLE
-from login import LoginPage
-from register import RegisterPage
-from dashboard import dashboard
-from add_student import AddStudentPage
-from verify import VerifyStudentPage
-from view_student import ViewStudentPage
-from student_detail import StudentDetailsPage
+from data.data import create_database
+
+from view import DashboardPage, STYLE
+
+from features.auth import LoginPage, RegisterPage
+
+from features.student import (
+    AddStudentPage,
+    VerifyStudentPage,
+    ViewStudentPage,
+    StudentDetailsPage
+)
 
 
 class MainWindow(QMainWindow):
@@ -63,7 +66,7 @@ class MainWindow(QMainWindow):
             self
         )
 
-        self.dashboard_page = dashboard(
+        self.dashboard_page = DashboardPage(
             self
         )
 
@@ -87,33 +90,18 @@ class MainWindow(QMainWindow):
         # ADD PAGES TO STACK
         # ----------------------------------------------------
 
-        self.stack.addWidget(
-            self.login_page
-        )
-
-        self.stack.addWidget(
-            self.register_page
-        )
-
-        self.stack.addWidget(
-            self.dashboard_page
-        )
-
-        self.stack.addWidget(
-            self.add_student_page
-        )
-
-        self.stack.addWidget(
-            self.verify_page
-        )
-
-        self.stack.addWidget(
-            self.view_student_page
-        )
-
-        self.stack.addWidget(
+        self.pages = [
+            self.login_page,
+            self.register_page,
+            self.dashboard_page,
+            self.add_student_page,
+            self.verify_page,
+            self.view_student_page,
             self.student_details_page
-        )
+        ]
+
+        for page in self.pages:
+            self.stack.addWidget(page)
 
         # Start at login
         self.show_login()
@@ -210,5 +198,3 @@ if __name__ == "__main__":
     window.show()
 
     sys.exit(app.exec())
-
-
